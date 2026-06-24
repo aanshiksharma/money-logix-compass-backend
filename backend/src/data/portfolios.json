@@ -1,0 +1,123 @@
+{
+  "templates": [
+    {
+      "id": "conservative",
+      "name": "Capital Preserver",
+      "riskRange": [0, 30],
+      "tagline": "Protect first, grow slowly.",
+      "expectedReturn": "6-8% p.a.",
+      "allocation": [
+        {
+          "asset": "Debt / Fixed Income",
+          "percent": 50,
+          "examples": ["HDFC Short Term Debt Fund", "SBI Magnum Gilt Fund"]
+        },
+        {
+          "asset": "Large-Cap Equity",
+          "percent": 25,
+          "examples": ["UTI Nifty 50 Index Fund", "ICICI Pru Bluechip Fund"]
+        },
+        {
+          "asset": "Gold",
+          "percent": 15,
+          "examples": ["Nippon India Gold ETF", "SGB (Sovereign Gold Bonds)"]
+        },
+        {
+          "asset": "Liquid / Cash",
+          "percent": 10,
+          "examples": ["Parag Parikh Liquid Fund"]
+        }
+      ]
+    },
+    {
+      "id": "balanced",
+      "name": "Steady Builder",
+      "riskRange": [31, 55],
+      "tagline": "Balanced growth with a safety cushion.",
+      "expectedReturn": "9-11% p.a.",
+      "allocation": [
+        {
+          "asset": "Large-Cap Equity",
+          "percent": 35,
+          "examples": ["UTI Nifty 50 Index Fund", "Mirae Asset Large Cap Fund"]
+        },
+        {
+          "asset": "Flexi-Cap Equity",
+          "percent": 25,
+          "examples": ["Parag Parikh Flexi Cap Fund"]
+        },
+        {
+          "asset": "Debt / Fixed Income",
+          "percent": 30,
+          "examples": ["HDFC Corporate Bond Fund"]
+        },
+        {
+          "asset": "Gold",
+          "percent": 10,
+          "examples": ["Nippon India Gold ETF"]
+        }
+      ]
+    },
+    {
+      "id": "aggressive",
+      "name": "Growth Seeker",
+      "riskRange": [56, 80],
+      "tagline": "Lean into equities for long-term compounding.",
+      "expectedReturn": "12-14% p.a.",
+      "allocation": [
+        {
+          "asset": "Flexi-Cap Equity",
+          "percent": 35,
+          "examples": ["Parag Parikh Flexi Cap Fund", "Quant Flexi Cap Fund"]
+        },
+        {
+          "asset": "Mid-Cap Equity",
+          "percent": 25,
+          "examples": ["Kotak Emerging Equity Fund"]
+        },
+        {
+          "asset": "Large-Cap Equity",
+          "percent": 25,
+          "examples": ["UTI Nifty 50 Index Fund"]
+        },
+        {
+          "asset": "Debt / Fixed Income",
+          "percent": 15,
+          "examples": ["HDFC Corporate Bond Fund"]
+        }
+      ]
+    },
+    {
+      "id": "growth",
+      "name": "Wealth Accelerator",
+      "riskRange": [81, 100],
+      "tagline": "Maximum long-horizon growth, high volatility.",
+      "expectedReturn": "14-16% p.a.",
+      "allocation": [
+        {
+          "asset": "Mid & Small-Cap Equity",
+          "percent": 40,
+          "examples": [
+            "Nippon India Small Cap Fund",
+            "Kotak Emerging Equity Fund"
+          ]
+        },
+        {
+          "asset": "Flexi-Cap Equity",
+          "percent": 30,
+          "examples": ["Parag Parikh Flexi Cap Fund"]
+        },
+        {
+          "asset": "Thematic / Intl Equity",
+          "percent": 20,
+          "examples": ["Motilal Oswal Nasdaq 100 FoF"]
+        },
+        {
+          "asset": "Debt / Fixed Income",
+          "percent": 10,
+          "examples": ["HDFC Corporate Bond Fund"]
+        }
+      ]
+    }
+  ]
+}
