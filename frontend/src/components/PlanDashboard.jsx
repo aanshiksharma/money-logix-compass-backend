@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   PieChart,
   Pie,
@@ -7,6 +7,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { inr, compact } from "../utils/formatters.js";
 
 const COLORS = [
   "#8ab4f8",
@@ -43,14 +44,6 @@ function sipFutureValue(monthly, annualRate, years) {
   return monthly * (((Math.pow(1 + r, n) - 1) / r) * (1 + r));
 }
 
-const inr = (n) => "₹" + Math.round(n || 0).toLocaleString("en-IN");
-const compact = (n) => {
-  const v = Math.round(n || 0);
-  if (v >= 1e7) return "₹" + (v / 1e7).toFixed(2) + " Cr";
-  if (v >= 1e5) return "₹" + (v / 1e5).toFixed(2) + " L";
-  return inr(v);
-};
-
 export default function PlanDashboard({ plan, profile }) {
   const horizon = Number(profile?.horizonYears) || 10;
   const baseSIP = Number(plan?.monthlySIP) || 10000;
@@ -67,6 +60,47 @@ export default function PlanDashboard({ plan, profile }) {
     setAmounts(init);
   }, [plan?.templateId, baseSIP]);
 
+  const pieData = useMemo(
+    () =>
+      (plan?.allocation || []).map((a) => ({
+        name: a.asset,
+        value: a.percent,
+      })),
+    [plan?.allocation],
+  );
+
+  const totalMonthly = useMemo(
+    () =>
+      (plan?.allocation || []).reduce((s, a) => s + (amounts[a.asset] || 0), 0),
+    [plan?.allocation, amounts],
+  );
+
+  const totalCorpus = useMemo(
+    () =>
+      (plan?.allocation || []).reduce(
+        (s, a) =>
+          s +
+          sipFutureValue(
+            amounts[a.asset] || 0,
+            assetAnnualReturn(a.asset),
+            horizon,
+          ),
+        0,
+      ),
+    [plan?.allocation, amounts, horizon],
+  );
+
+  const totalInvested = totalMonthly * horizon * 12;
+
+  const resetAmounts = useCallback(() => {
+    if (!plan?.allocation) return;
+    const init = {};
+    for (const a of plan.allocation) {
+      init[a.asset] = Math.round((baseSIP * a.percent) / 100);
+    }
+    setAmounts(init);
+  }, [plan?.allocation, baseSIP]);
+
   if (!plan) {
     return (
       <div className="dash empty">
@@ -79,35 +113,6 @@ export default function PlanDashboard({ plan, profile }) {
         {profile && <ProfileProgress profile={profile} />}
       </div>
     );
-  }
-
-  const pieData = plan.allocation.map((a) => ({
-    name: a.asset,
-    value: a.percent,
-  }));
-
-  const totalMonthly = plan.allocation.reduce(
-    (s, a) => s + (amounts[a.asset] || 0),
-    0,
-  );
-  const totalCorpus = plan.allocation.reduce(
-    (s, a) =>
-      s +
-      sipFutureValue(
-        amounts[a.asset] || 0,
-        assetAnnualReturn(a.asset),
-        horizon,
-      ),
-    0,
-  );
-  const totalInvested = totalMonthly * horizon * 12;
-
-  function resetAmounts() {
-    const init = {};
-    for (const a of plan.allocation) {
-      init[a.asset] = Math.round((baseSIP * a.percent) / 100);
-    }
-    setAmounts(init);
   }
 
   return (
@@ -147,8 +152,8 @@ export default function PlanDashboard({ plan, profile }) {
               paddingAngle={2}
               label={(d) => `${d.value}%`}
             >
-              {pieData.map((_, i) => (
-                <Cell key={i} fill={COLORS[i % COLORS.length]} />
+              {pieData.map((d, i) => (
+                <Cell key={d.name} fill={COLORS[i % COLORS.length]} />
               ))}
             </Pie>
             <Tooltip />
@@ -238,8 +243,8 @@ export default function PlanDashboard({ plan, profile }) {
 
       <h3 className="ms-title">Milestones</h3>
       <ul className="milestones">
-        {plan.milestones.map((m, i) => (
-          <li key={i}>
+        {plan.milestones.map((m) => (
+          <li key={m.label}>
             <span className="ms-dot" />
             <div>
               <div>{m.label}</div>

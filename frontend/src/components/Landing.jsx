@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   AreaChart,
   Area,
@@ -10,6 +10,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { compactShort as compact } from "../utils/formatters.js";
 
 // Minimal professional line icons (stroke = currentColor).
 const Icon = ({ name }) => {
@@ -151,12 +152,6 @@ const DEMO_ALLOC = [
   { name: "Liquid", value: 8, color: "#9b72cb" },
 ];
 
-const compact = (n) => {
-  if (n >= 1e7) return "₹" + (n / 1e7).toFixed(1) + "Cr";
-  if (n >= 1e5) return "₹" + (n / 1e5).toFixed(1) + "L";
-  return "₹" + Math.round(n).toLocaleString("en-IN");
-};
-
 // Mock conversation showing onboarding → plan → calm mode.
 const SAMPLE_CHAT = [
   {
@@ -261,7 +256,7 @@ const FAQS = [
 ];
 
 export default function Landing({ theme, onToggleTheme, onStart }) {
-  const data = projectionData();
+  const data = useMemo(() => projectionData(), []);
   const finalValue = data[data.length - 1].Value;
   const [openFaq, setOpenFaq] = React.useState(0);
 
@@ -467,7 +462,7 @@ export default function Landing({ theme, onToggleTheme, onStart }) {
         <h2 className="section-title">A real conversation, not a form.</h2>
         <div className="chat-demo">
           {SAMPLE_CHAT.map((m, i) => (
-            <div className={`cd-row ${m.who}`} key={i}>
+            <div className={`cd-row ${m.who}`} key={`${m.who}-${i}`}>
               <div className={`cd-bubble ${m.who}`}>
                 {m.who === "calm" && (
                   <span className="cd-calm-tag">Calm Mode</span>

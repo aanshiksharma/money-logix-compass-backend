@@ -10,6 +10,10 @@ const SUGGESTIONS = [
   "Help me plan for retirement",
 ];
 
+// Stable, unique message ids for React keys.
+let _msgSeq = 0;
+const nextMsgId = () => `m${++_msgSeq}`;
+
 export default function App({ user, theme = "dark", onToggleTheme, onLogout }) {
   const [sessionId] = useState(getSessionId);
   const [messages, setMessages] = useState([]);
@@ -90,7 +94,7 @@ export default function App({ user, theme = "dark", onToggleTheme, onLogout }) {
     const text = (typeof maybeText === "string" ? maybeText : input).trim();
     if (!text || loading) return;
     setInput("");
-    setMessages((m) => [...m, { role: "user", content: text }]);
+    setMessages((m) => [...m, { id: nextMsgId(), role: "user", content: text }]);
     setLoading(true);
     setBanner(null);
     try {
@@ -98,6 +102,7 @@ export default function App({ user, theme = "dark", onToggleTheme, onLogout }) {
       setMessages((m) => [
         ...m,
         {
+          id: nextMsgId(),
           role: "assistant",
           content: res.reply,
           panicMode: res.emotion?.panicMode,
@@ -252,8 +257,8 @@ export default function App({ user, theme = "dark", onToggleTheme, onLogout }) {
           {hasStarted ? (
             <>
               <div className="messages" ref={scrollRef}>
-                {messages.map((m, i) => (
-                  <MessageBubble key={i} msg={m} />
+                {messages.map((m) => (
+                  <MessageBubble key={m.id} msg={m} />
                 ))}
                 {loading && (
                   <div className="bubble-row left">

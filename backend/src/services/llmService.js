@@ -1,33 +1,11 @@
-import OpenAI from "openai";
 import {
   CALM_MODE_DIRECTIVE,
   DETAILED_MODE_DIRECTIVE,
 } from "../prompts/systemPrompts.js";
 
-// ---- Pluggable provider config ----------------------------------------
-// LLM_PROVIDER: "gemini" (default) | "openrouter"
-// Both use the OpenAI-compatible Chat Completions API, so one SDK serves both.
-const PROVIDER = (process.env.LLM_PROVIDER || "gemini").toLowerCase();
-
+// ---- Provider config ---------------------------------------------------
+// Google Gemini via its NATIVE REST API (X-goog-api-key header).
 function resolveProvider() {
-  if (PROVIDER === "openrouter") {
-    return {
-      name: "openrouter",
-      mode: "openai",
-      apiKey: process.env.OPENROUTER_API_KEY,
-      baseURL:
-        process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1",
-      model:
-        process.env.OPENROUTER_MODEL ||
-        "meta-llama/llama-3.3-70b-instruct:free",
-      headers: {
-        "HTTP-Referer":
-          process.env.OPENROUTER_SITE_URL || "http://localhost:5173",
-        "X-Title": process.env.OPENROUTER_SITE_NAME || "NiveshMitra",
-      },
-    };
-  }
-  // Default: Google Gemini via its NATIVE REST API (X-goog-api-key header).
   // The OpenAI-compatible endpoint uses Bearer auth which Ai-Studio "AQ." keys
   // reject — the native header method works for both AQ and AIza keys.
   return {
@@ -54,15 +32,6 @@ const provider = resolveProvider();
 const apiKey = provider.apiKey;
 const MOCK = process.env.MOCK_LLM === "true" || !apiKey;
 const MODEL = provider.model;
-
-let client = null;
-if (!MOCK && provider.mode === "openai") {
-  client = new OpenAI({
-    apiKey,
-    baseURL: provider.baseURL,
-    defaultHeaders: provider.headers,
-  });
-}
 
 export function isMockMode() {
   return MOCK;
@@ -167,49 +136,6 @@ export async function chatJSON({
         _error: err.message,
       };
     }
-  }
-
-  const messages = [
-    { role: "system", content: system },
-    ...history.map((m) => ({ role: m.role, content: m.content })),
-    { role: "user", content: userMessage },
-  ];
-
-  try {
-    const completion = await client.chat.completions.create({
-      model: MODEL,
-      messages,
-      temperature: 0.7,
-      max_tokens: thinkMode ? 1200 : 600,
-      // Many OpenRouter models honor this; parser handles ones that don't.
-      response_format: { type: "json_object" },
-    });
-    const raw = completion.choices?.[0]?.message?.content ?? "";
-    const parsed = safeParseJSON(raw);
-    if (parsed && parsed.response_text) {
-      return { ...normalize(parsed), _raw: raw, _mock: false };
-    }
-    // Model didn't return valid JSON — degrade gracefully using raw text.
-    return {
-      response_text:
-        raw ||
-        "Sorry, I had trouble forming a reply. Could you say that again?",
-      detected_emotion: "neutral",
-      risk_signal: "none",
-      confidence: 0.3,
-      profile_updates: {},
-      onboarding_complete: false,
-      _raw: raw,
-      _mock: false,
-    };
-  } catch (err) {
-    console.error("LLM call failed:", err.message);
-    return {
-      ...mockResponse(userMessage, calmMode),
-      response_text:
-        "I'm having a little trouble reaching my brain right now — but I'm still here. Want to try again?",
-      _error: err.message,
-    };
   }
 }
 
