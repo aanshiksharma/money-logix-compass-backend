@@ -163,7 +163,7 @@ async function callGeminiNative({
   // thinkMode OFF -> thinking disabled (0) for fast, concise JSON.
   const maxOutputTokens = thinkMode
     ? Number(process.env.GEMINI_THINK_MAX_TOKENS || 4096)
-    : Number(process.env.GEMINI_MAX_TOKENS || 1024);
+    : Number(process.env.GEMINI_MAX_TOKENS || 2048);
 
   const payload = {
     systemInstruction: { parts: [{ text: system }] },
