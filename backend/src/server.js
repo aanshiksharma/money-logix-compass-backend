@@ -8,8 +8,20 @@ import planRoutes from "./routes/plan.js";
 import profileRoutes from "./routes/profile.js";
 import authRoutes from "./routes/auth.js";
 
+const allowedOrigins = ["http://localhost:3000", "http://localhost:5173"];
+
 const app = express();
-app.use(cors({ allowedOrigins: ["http://localhost:3000"] }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin))
+        return callback(null, true);
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+  }),
+);
+
 app.use(express.json({ limit: "1mb" }));
 
 app.get("/api/health", (_req, res) => {
