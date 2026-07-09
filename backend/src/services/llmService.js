@@ -1,6 +1,7 @@
 import {
   CALM_MODE_DIRECTIVE,
   DETAILED_MODE_DIRECTIVE,
+  TITLE_GENERATION_SYSTEM_PROMPT,
 } from "../prompts/systemPrompts.js";
 
 // ---- Provider config ---------------------------------------------------
@@ -41,10 +42,6 @@ export function providerInfo() {
   return { provider: provider.name, model: MODEL, mock: MOCK };
 }
 
-/**
- * Robustly extract the first JSON object from an LLM string.
- * Free models often wrap JSON in prose or ```json fences.
- */
 export function safeParseJSON(raw) {
   if (!raw || typeof raw !== "string") return null;
   let text = raw.trim();
@@ -139,11 +136,27 @@ export async function chatJSON({
   }
 }
 
-/**
- * Call Google Gemini via the native REST API using the X-goog-api-key header.
- * Returns the raw text of the model's reply (expected to be JSON per our prompt).
- * Retries the primary model on 503/overload, then tries fallback models.
- */
+export async function generateJSON({ systemPrompt, userMessage }) {
+  if (MOCK) {
+    return {};
+  }
+
+  const raw = await callGeminiNative({
+    system: systemPrompt,
+    history: [],
+    userMessage,
+    thinkMode: false,
+  });
+
+  const parsed = safeParseJSON(raw);
+
+  if (!parsed) {
+    throw new Error("Failed to parse JSON response.");
+  }
+
+  return parsed;
+}
+
 async function callGeminiNative({
   system,
   history,
@@ -214,6 +227,15 @@ async function callGeminiNative({
   throw new Error(lastErr);
 }
 
+export async function generateConversationTitle(message) {
+  const result = await generateJSON({
+    systemPrompt: TITLE_GENERATION_SYSTEM_PROMPT,
+    userMessage: message,
+  });
+
+  return result.title || "New Chat";
+}
+
 function normalize(p) {
   return {
     response_text: String(p.response_text || ""),
@@ -227,7 +249,6 @@ function normalize(p) {
   };
 }
 
-/** Deterministic canned responses so the demo works without a key / network. */
 function mockResponse(userMessage, calmMode) {
   if (calmMode) {
     return {

@@ -44,7 +44,7 @@ export function buildPlan(profile) {
   const milestones = buildMilestones(profile, horizon, monthlySIP, fv);
 
   return {
-    sessionId: profile.sessionId,
+    conversationId: profile.conversationId,
     templateId: template.id,
     templateName: template.name,
     tagline: template.tagline,

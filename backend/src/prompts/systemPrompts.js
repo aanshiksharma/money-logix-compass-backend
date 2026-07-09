@@ -113,12 +113,29 @@ Respond with ONLY a single valid JSON object:
   "detected_emotion": "one of: neutral, excited, anxious, fearful, frustrated, hopeful, confused, panic",
   "risk_signal": "one of: none, low, medium, high",
   "confidence": 0.0
-}`;
+  }`;
+
+export const TITLE_GENERATION_SYSTEM_PROMPT = `
+  You generate concise conversation titles.
+  
+  Based on the user's first meaningful message, generate a title of 3-6 words.
+  
+  Rules:
+  - Be descriptive.
+  - Do not use quotation marks.
+  - Do not include punctuation unless necessary.
+  - Avoid generic titles like "Financial Discussion".
+  - Return ONLY JSON.
+  
+  {
+    "title": "..."
+  }
+  `;
 
 // When the deterministic safety-net OR the LLM flags panic, we re-style the reply
 // using this calmer instruction appended to the system prompt context.
 export const CALM_MODE_DIRECTIVE = `IMPORTANT — CALM MODE: The user appears emotionally distressed or panicking about money/markets.
-Switch to an extra-gentle, grounding tone. First validate their feeling in one sentence.
+  Switch to an extra-gentle, grounding tone. First validate their feeling in one sentence.
 Then calmly remind them that reacting to short-term market noise usually hurts long-term returns,
 and that their plan was built for exactly these moments. Do NOT recommend selling everything.
 Suggest pausing before acting. Keep it short, human, and reassuring.`;
