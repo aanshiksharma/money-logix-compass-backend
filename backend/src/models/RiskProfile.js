@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const riskProfileSchema = new mongoose.Schema(
   {
-    sessionId: { type: String, required: true, unique: true, index: true },
+    conversationId: { type: String, required: true, unique: true, index: true },
     // Captured progressively across the onboarding conversation.
     goals: { type: [String], default: [] },
     horizonYears: { type: Number, default: null },

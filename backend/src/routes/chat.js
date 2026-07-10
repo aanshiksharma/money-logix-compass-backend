@@ -12,40 +12,45 @@ import {
   ADVISOR_SYSTEM_PROMPT,
 } from "../prompts/systemPrompts.js";
 import {
-  getOrCreateUser,
   getConversation,
+  createConversation,
+  getAllConversations,
   appendMessages,
   getProfile,
   updateProfile,
   savePlan,
   getPlan,
+  getUser,
 } from "../services/store.js";
+import ConversationLog from "../models/ConversationLog.js";
 
 const router = express.Router();
 
 // Number of user turns between simulated periodic check-ins.
 const CHECKIN_EVERY = 4;
 
-/**
- * POST /api/chat
- * body: { sessionId, message }
- */
 router.post("/", async (req, res) => {
   try {
-    const { sessionId, message, thinkMode } = req.body || {};
-    if (!sessionId || !message || typeof message !== "string") {
-      return res
-        .status(400)
-        .json({ error: "sessionId and message are required." });
+    const { email, conversationId, message, thinkMode } = req.body;
+
+    if (!email || !message || typeof message !== "string") {
+      return res.status(400).json({ error: "Email and message are required." });
     }
     if (message.length > 2000) {
       return res.status(400).json({ error: "Message too long." });
     }
 
-    const user = await getOrCreateUser(sessionId);
-    const profile = await getProfile(sessionId);
-    const convo = await getConversation(sessionId);
-    const plan = await getPlan(sessionId);
+    const user = await getUser(email);
+
+    const conversation =
+      conversationId !== ""
+        ? await getConversation(conversationId)
+        : await createConversation(email, message);
+
+    const newConversationId = conversation._id.toString();
+
+    const profile = await getProfile(newConversationId);
+    const plan = await getPlan(newConversationId);
 
     const onboarding = !profile.complete && !isProfileComplete(profile);
     let systemPrompt = onboarding
@@ -68,9 +73,10 @@ router.post("/", async (req, res) => {
     }
 
     // History trimmed to recent turns to keep token usage low on free models.
-    const history = convo.messages
-      .slice(-8)
-      .map((m) => ({ role: m.role, content: m.content }));
+    const history = conversation.messages.slice(-8).map((message) => ({
+      role: message.role,
+      content: message.content,
+    }));
 
     // Pre-scan the deterministic safety net so we can request calm-mode styling
     // from the LLM up front when panic language is present.
@@ -90,11 +96,11 @@ router.post("/", async (req, res) => {
 
     // Merge any profile updates the model extracted.
     if (llm.profile_updates && Object.keys(llm.profile_updates).length) {
-      await updateProfile(sessionId, llm.profile_updates);
+      await updateProfile(newConversationId, llm.profile_updates);
     }
 
     // Re-read profile, recompute score, and possibly finalize onboarding + plan.
-    let updatedProfile = await getProfile(sessionId);
+    let updatedProfile = await getProfile(newConversationId);
     let planJustBuilt = null;
 
     const readyToFinalize =
@@ -103,27 +109,30 @@ router.post("/", async (req, res) => {
 
     if (isProfileComplete(updatedProfile)) {
       const score = computeRiskScore(updatedProfile);
-      updatedProfile = await updateProfile(sessionId, {
+      updatedProfile = await updateProfile(newConversationId, {
         riskScore: score,
         riskCategory: categorize(score),
       });
     }
 
     if (readyToFinalize && isProfileComplete(updatedProfile)) {
-      updatedProfile = await updateProfile(sessionId, { complete: true });
+      updatedProfile = await updateProfile(newConversationId, {
+        complete: true,
+      });
       const planData = buildPlan(updatedProfile);
-      planJustBuilt = await savePlan(sessionId, planData);
+      planJustBuilt = await savePlan(newConversationId, planData);
       user.onboardingComplete = true;
       if (user.save) await user.save();
     }
 
     // Periodic check-in: every N user turns, nudge a reflective question.
     const userTurns =
-      convo.messages.filter((m) => m.role === "user").length + 1;
+      conversation.messages.filter((message) => message.role === "user")
+        .length + 1;
     const checkIn = userTurns > 0 && userTurns % CHECKIN_EVERY === 0;
 
     // Persist both turns with emotion metadata on the assistant message.
-    await appendMessages(sessionId, [
+    await appendMessages(newConversationId, [
       { role: "user", content: message },
       {
         role: "assistant",
@@ -136,7 +145,8 @@ router.post("/", async (req, res) => {
       },
     ]);
 
-    res.json({
+    res.status(200).json({
+      conversationId: newConversationId,
       reply: llm.response_text,
       emotion: {
         detected: llm.detected_emotion,
@@ -158,6 +168,42 @@ router.post("/", async (req, res) => {
     res
       .status(500)
       .json({ error: "Something went wrong handling your message." });
+  }
+});
+
+router.get("/", async (req, res) => {
+  try {
+    const conversations = await getAllConversations();
+    res.status(201).json({ conversations });
+  } catch (err) {
+    console.error("Some error occurred while fetching conversations:", err);
+    res
+      .status(400)
+      .json({ error: "Some error occurred while fetching conversations." });
+  }
+});
+
+router.get("/:slug", async (req, res) => {
+  const slug = req.params.slug;
+
+  try {
+    const conversation = await ConversationLog.findOne({
+      email,
+      slug,
+    });
+
+    if (!conversation) {
+      return res.status(404).json({
+        error: "This conversation was either deleted or does not exist.",
+      });
+    }
+
+    res.status(201).json(conversation);
+  } catch (err) {
+    console.error("Some error occurred while fetching the conversation:", err);
+    res
+      .status(500)
+      .json({ error: "Some error occurred while fetching the conversation." });
   }
 });
 

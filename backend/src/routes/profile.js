@@ -4,10 +4,11 @@ import { getProfile, getConversation } from "../services/store.js";
 const router = express.Router();
 
 // GET /api/profile/:sessionId
-router.get("/:sessionId", async (req, res) => {
+router.get("/:conversationId", async (req, res) => {
   try {
-    const { sessionId } = req.params;
-    const p = await getProfile(sessionId);
+    const conversationId = req.params.conversationId;
+
+    const p = await getProfile(conversationId);
     res.json({
       profile: {
         goals: p.goals || [],
@@ -27,9 +28,11 @@ router.get("/:sessionId", async (req, res) => {
 });
 
 // GET /api/profile/:sessionId/history -> full conversation log
-router.get("/:sessionId/history", async (req, res) => {
+router.get("/:conversationId/history", async (req, res) => {
+  const conversationId = req.params.conversationId;
+
   try {
-    const convo = await getConversation(req.params.sessionId);
+    const convo = await getConversation(conversationId);
     res.json({ messages: convo.messages || [] });
   } catch (err) {
     res.status(500).json({ error: "Could not load history." });

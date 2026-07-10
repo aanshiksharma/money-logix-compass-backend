@@ -12,7 +12,7 @@ const milestoneSchema = new mongoose.Schema(
 
 const planSchema = new mongoose.Schema(
   {
-    sessionId: { type: String, required: true, unique: true, index: true },
+    conversationId: { type: String, required: true, unique: true, index: true },
     templateId: { type: String, required: true },
     templateName: { type: String, required: true },
     tagline: { type: String, default: "" },
