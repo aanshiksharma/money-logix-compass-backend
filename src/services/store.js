@@ -2,7 +2,7 @@
 // otherwise falls back to in-memory maps so the demo never hard-fails.
 import crypto from "crypto";
 import { isDbConnected } from "../config/db.js";
-import { generateConversationTitle } from "../services/llmService.js";
+import { generateConversationTitle } from "./llmService.js";
 import ConversationLog from "../models/ConversationLog.js";
 import RiskProfile from "../models/RiskProfile.js";
 import Plan from "../models/Plan.js";
